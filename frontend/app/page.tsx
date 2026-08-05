@@ -27,40 +27,31 @@ export default function Home() {
         }
       );
 
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-
-      if (!reader) {
-        setLoading(false);
-        return;
+      if (!response.body) {
+        throw new Error("No response body");
       }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
 
       while (true) {
         const { done, value } = await reader.read();
 
-        if (done) break;
+        if (done) {
+          break;
+        }
 
         const chunk = decoder.decode(value, {
           stream: true,
         });
 
-        const lines = chunk
-          .split("\n")
-          .filter((line) => line.trim());
+        console.log("CHUNK:", chunk);
 
-        for (const line of lines) {
-          try {
-            const data = JSON.parse(line);
-
-            if (data.response) {
-              setReply((prev) => prev + data.response);
-            }
-          } catch {
-            setReply((prev) => prev + line);
-          }
-        }
+        setReply((prev) => prev + chunk);
       }
-    } catch {
+
+    } catch (error) {
+      console.error(error);
       setReply("Error connecting to backend");
     }
 
@@ -69,29 +60,65 @@ export default function Home() {
 
   return (
     <main className="min-h-screen p-10">
+
       <h1 className="text-3xl font-bold mb-6">
         Personal AI Agent
       </h1>
 
-      <div className="mb-6 border rounded p-4 min-h-40 whitespace-pre-wrap">
-        {reply || "AI response will appear here..."}
+
+      <div
+        className="
+          mb-6
+          border
+          rounded
+          p-4
+          min-h-40
+          whitespace-pre-wrap
+        "
+      >
+        {
+          reply ||
+          "AI response will appear here..."
+        }
       </div>
 
+
       <textarea
-        className="border rounded w-full p-3"
+        className="
+          border
+          rounded
+          w-full
+          p-3
+        "
         rows={4}
         value={message}
-        onChange={(e) => setMessage(e.target.value)}
+        onChange={(e) =>
+          setMessage(e.target.value)
+        }
         placeholder="Ask something..."
       />
 
+
       <button
-        className="mt-4 bg-black text-white px-5 py-2 rounded disabled:opacity-50"
+        className="
+          mt-4
+          bg-black
+          text-white
+          px-5
+          py-2
+          rounded
+          disabled:opacity-50
+        "
         onClick={sendMessage}
         disabled={loading}
       >
-        {loading ? "Thinking..." : "Send"}
+        {
+          loading
+          ? "Thinking..."
+          : "Send"
+        }
       </button>
+
     </main>
   );
 }
