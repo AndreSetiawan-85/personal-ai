@@ -1,5 +1,4 @@
 SEARCH_DOMAINS = {
-
     "news": [
         "berita",
         "terbaru",
@@ -8,8 +7,6 @@ SEARCH_DOMAINS = {
         "breaking",
         "news",
     ],
-
-
     "food": [
         "resep",
         "masak",
@@ -18,8 +15,6 @@ SEARCH_DOMAINS = {
         "makanan",
         "minuman",
     ],
-
-
     "travel": [
         "hotel",
         "pesawat",
@@ -30,8 +25,6 @@ SEARCH_DOMAINS = {
         "destinasi",
         "jalan-jalan",
     ],
-
-
     "shopping": [
         "harga",
         "beli",
@@ -41,8 +34,6 @@ SEARCH_DOMAINS = {
         "terbaik",
         "review",
     ],
-
-
     "coding": [
         "python",
         "javascript",
@@ -52,8 +43,6 @@ SEARCH_DOMAINS = {
         "api",
         "program",
     ],
-
-
     "finance": [
         "saham",
         "crypto",
@@ -61,16 +50,12 @@ SEARCH_DOMAINS = {
         "harga dolar",
         "kurs",
     ],
-
-
     "health": [
         "obat",
         "gejala",
         "kesehatan",
         "dokter",
     ],
-
-
     "entertainment": [
         "film",
         "series",
@@ -78,42 +63,27 @@ SEARCH_DOMAINS = {
         "game",
         "musik",
     ],
-
 }
 
-
-
 def detect_search_type(message: str):
-
     text = message.lower()
-
-
     scores = {}
 
-
     for domain, keywords in SEARCH_DOMAINS.items():
-
         score = 0
 
-
         for keyword in keywords:
-
             if keyword in text:
                 score += 1
 
-
         scores[domain] = score
-
-
 
     best_domain = max(
         scores,
         key=scores.get
     )
 
-
     if scores[best_domain] > 0:
         return best_domain
-
 
     return "general"

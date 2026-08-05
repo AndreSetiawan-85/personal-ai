@@ -1,64 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-type Message = {
-  id: number;
-  role: string;
-  content: string;
-};
+import { useState } from "react";
 
 export default function Home() {
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [reply, setReply] = useState("");
+  const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
-
-  async function loadHistory() {
-    try {
-      const response = await fetch(
-        "http://localhost:8000/chat/history"
-      );
-
-      const data = await response.json();
-
-      setMessages(data);
-
-    } catch (error) {
-      console.error(
-        "Failed loading history",
-        error
-      );
-    }
-  }
-
-
-  useEffect(() => {
-    loadHistory();
-  }, []);
-
 
   async function sendMessage() {
     if (!message.trim()) return;
 
-
-    const userText = message;
-
-    setMessage("");
+    setReply("");
+    setStatus("");
     setLoading(true);
-
-
-    const tempUserMessage: Message = {
-      id: Date.now(),
-      role: "user",
-      content: userText,
-    };
-
-
-    setMessages((prev) => [
-      ...prev,
-      tempUserMessage,
-    ]);
-
 
     try {
       const response = await fetch(
@@ -69,164 +24,118 @@ export default function Home() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            message: userText,
+            message,
           }),
         }
       );
 
-
       if (!response.body) {
-        throw new Error(
-          "No response body"
-        );
+        throw new Error("No response body");
       }
 
-
-      const reader =
-        response.body.getReader();
-
-
-      const decoder =
-        new TextDecoder();
-
-
-      let assistantText = "";
-
-
-      const assistantId = Date.now() + 1;
-
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: assistantId,
-          role: "assistant",
-          content: "",
-        },
-      ]);
-
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
 
       while (true) {
-
         const {
           done,
           value,
         } = await reader.read();
 
+        if (done) {
+          break;
+        }
 
-        if (done) break;
-
-
-        const chunk =
-          decoder.decode(value, {
+        const chunk = decoder.decode(
+          value,
+          {
             stream: true,
-          });
-
-
-        assistantText += chunk;
-
-
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === assistantId
-              ? {
-                  ...msg,
-                  content: assistantText,
-                }
-              : msg
-          )
+          }
         );
+
+        const lines = chunk
+          .split("\n")
+          .filter(
+            line => line.trim()
+          );
+
+        for (const line of lines) {
+          try {
+            const event = JSON.parse(line);
+
+            if (event.type === "status") {
+              setStatus(
+                event.message
+              );
+            }
+
+            if (event.type === "chunk") {
+              setStatus("");
+
+              setReply(
+                prev =>
+                  prev + event.content
+              );
+            }
+
+            if (event.type === "done") {
+              setLoading(false);
+            }
+
+            if (event.type === "error") {
+              setStatus(
+                "Error: " + event.message
+              );
+            }
+
+          } catch (error) {
+            console.log(
+              "Parse error:",
+              line
+            );
+          }
+        }
       }
 
-
     } catch (error) {
-
-      console.error(error);
-
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now(),
-          role: "assistant",
-          content:
-            "Error connecting to backend",
-        },
-      ]);
-
+      setReply(
+        "Error connecting to backend"
+      );
     }
-
 
     setLoading(false);
   }
 
-
   return (
     <main className="min-h-screen p-10">
-
       <h1 className="text-3xl font-bold mb-6">
         Personal AI Agent
       </h1>
 
-
-      <div className="
-        border
-        rounded
-        p-4
-        min-h-96
-        mb-6
-        space-y-4
-        whitespace-pre-wrap
-      ">
-
-        {messages.length === 0 && (
-          <div>
-            No conversation yet...
-          </div>
-        )}
-
-
-        {messages.map((msg) => (
-
-          <div
-            key={msg.id}
-            className={
-              msg.role === "user"
-                ? "text-right"
-                : "text-left"
-            }
-          >
-
-            <div
-              className={
-                msg.role === "user"
-                  ? `
-                    inline-block
-                    bg-black
-                    text-white
-                    rounded
-                    px-4
-                    py-2
-                  `
-                  : `
-                    inline-block
-                    bg-gray-200
-                    text-black
-                    rounded
-                    px-4
-                    py-2
-                  `
-              }
-            >
-              {msg.content}
+      <div
+        className="
+          border
+          rounded
+          p-4
+          min-h-40
+          mb-6
+          whitespace-pre-wrap
+        "
+      >
+        {
+          status &&
+          (
+            <div className="text-gray-500 mb-3">
+              🔄 {status}
             </div>
+          )
+        }
 
-          </div>
-
-        ))}
-
+        {
+          reply ||
+          "AI response will appear here..."
+        }
       </div>
-
 
       <textarea
         className="
@@ -237,12 +146,14 @@ export default function Home() {
         "
         rows={4}
         value={message}
-        onChange={(e) =>
-          setMessage(e.target.value)
+        onChange={
+          (e) =>
+            setMessage(
+              e.target.value
+            )
         }
         placeholder="Ask something..."
       />
-
 
       <button
         className="
@@ -257,12 +168,12 @@ export default function Home() {
         onClick={sendMessage}
         disabled={loading}
       >
-        {loading
+        {
+          loading
           ? "Thinking..."
-          : "Send"}
+          : "Send"
+        }
       </button>
-
-
     </main>
   );
 }

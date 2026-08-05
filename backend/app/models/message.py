@@ -1,8 +1,8 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime
 from datetime import datetime
 
-from app.database import Base
+from sqlalchemy import Column, DateTime, Integer, String, Text
 
+from app.database import Base
 
 class Message(Base):
     __tablename__ = "messages"

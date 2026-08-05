@@ -1,14 +1,12 @@
-import requests
 import json
+import requests
 
 from app.core.config import settings
-
 
 class OllamaService:
     def __init__(self):
         self.base_url = settings.OLLAMA_URL
         self.model = settings.MODEL_NAME
-
 
     def generate_response(self, prompt: str) -> str:
         response = requests.post(
@@ -28,7 +26,6 @@ class OllamaService:
 
         return data["response"]
 
-
     def stream_response(self, prompt: str):
         response = requests.post(
             f"{self.base_url}/api/generate",
@@ -45,7 +42,6 @@ class OllamaService:
         response.raise_for_status()
 
         for line in response.iter_lines():
-
             if line:
                 data = json.loads(
                     line.decode("utf-8")
@@ -53,6 +49,5 @@ class OllamaService:
 
                 if "response" in data:
                     yield data["response"]
-
 
 ollama_service = OllamaService()

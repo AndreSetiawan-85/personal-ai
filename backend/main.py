@@ -5,7 +5,6 @@ import requests
 
 app = FastAPI()
 
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -17,10 +16,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 class ChatRequest(BaseModel):
     message: str
-
 
 @app.get("/")
 def home():
@@ -28,17 +25,15 @@ def home():
         "message": "Hello Personal AI"
     }
 
-
 @app.post("/chat")
 def chat(request: ChatRequest):
-
     ollama_response = requests.post(
         "http://localhost:11434/api/generate",
         json={
-        "model": "qwen3:8b",
-        "prompt": request.message,
-        "stream": False,
-        "think": False
+            "model": "qwen3:8b",
+            "prompt": request.message,
+            "stream": False,
+            "think": False,
         },
         timeout=120
     )

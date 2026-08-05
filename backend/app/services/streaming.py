@@ -1,12 +1,8 @@
 import json
 
-
 class StreamEvent:
-
-
     @staticmethod
     def status(message: str):
-
         return (
             json.dumps(
                 {
@@ -17,11 +13,8 @@ class StreamEvent:
             + "\n"
         )
 
-
-
     @staticmethod
     def chunk(text: str):
-
         return (
             json.dumps(
                 {
@@ -32,11 +25,8 @@ class StreamEvent:
             + "\n"
         )
 
-
-
     @staticmethod
     def done():
-
         return (
             json.dumps(
                 {
@@ -46,11 +36,8 @@ class StreamEvent:
             + "\n"
         )
 
-
-
     @staticmethod
     def error(message: str):
-
         return (
             json.dumps(
                 {
