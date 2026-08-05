@@ -1,16 +1,12 @@
 from app.tools import TOOLS
 
-from app.services.ollama import (
-    ollama_service
-)
+from app.services.ollama import ollama_service
 
-from app.services.search_router import (
-    detect_search_type
-)
+from app.services.search_router import detect_search_type
 
-from app.services.citation import (
-    format_citations
-)
+from app.services.citation import format_citations
+
+
 
 
 
@@ -20,6 +16,8 @@ class AgentService:
     def __init__(self):
 
         self.tools = TOOLS
+
+
 
 
 
@@ -33,12 +31,11 @@ class AgentService:
 
 
 
-        # =====================
-        # Calculator Detection
-        # =====================
+        # ======================
+        # Calculator
+        # ======================
 
-
-        math_keywords = [
+        calculator_words = [
 
             "+",
             "-",
@@ -49,14 +46,15 @@ class AgentService:
             "kali",
             "tambah",
             "kurang",
-            "bagi",
+            "bagi"
 
         ]
 
 
+
         if any(
-            keyword in text
-            for keyword in math_keywords
+            word in text
+            for word in calculator_words
         ):
 
             return "calculator"
@@ -64,38 +62,27 @@ class AgentService:
 
 
 
-        # =====================
-        # Web Search Detection
-        # =====================
+
+        # ======================
+        # Search
+        # ======================
 
 
-        domain = detect_search_type(
+        category = detect_search_type(
             message
         )
 
 
-        search_domains = [
 
-            "news",
-            "food",
-            "travel",
-            "shopping",
-            "coding",
-            "finance",
-            "health",
-            "entertainment",
-
-        ]
-
-
-
-        if domain in search_domains:
+        if category:
 
             return "web_search"
 
 
 
         return None
+
+
 
 
 
@@ -113,28 +100,25 @@ class AgentService:
         )
 
 
-
-        domain = None
-
         result = None
 
         citations = []
 
+        category = None
 
 
 
-        # =====================
+
+
+        # ======================
         # Normal Chat
-        # =====================
+        # ======================
 
 
         if not tool_name:
 
-
             return ollama_service.generate_response(
-
                 message
-
             )
 
 
@@ -149,11 +133,8 @@ class AgentService:
 
         if not tool:
 
-
             return ollama_service.generate_response(
-
                 message
-
             )
 
 
@@ -161,20 +142,19 @@ class AgentService:
 
 
 
-        # =====================
+
+
+        # ======================
         # Calculator
-        # =====================
+        # ======================
 
 
         if tool_name == "calculator":
 
 
-
             expression = (
 
-                message
-
-                .lower()
+                message.lower()
 
                 .replace(
                     "berapa",
@@ -191,15 +171,9 @@ class AgentService:
                     ""
                 )
 
-                .replace(
-                    "adalah",
-                    ""
-                )
-
                 .strip()
 
             )
-
 
 
             result = tool(
@@ -210,25 +184,24 @@ class AgentService:
 
 
 
-        # =====================
+
+
+        # ======================
         # Web Search
-        # =====================
+        # ======================
 
 
         elif tool_name == "web_search":
 
 
-
-            domain = detect_search_type(
+            category = detect_search_type(
                 message
             )
-
 
 
             result = tool(
                 message
             )
-
 
 
             citations = format_citations(
@@ -246,10 +219,6 @@ class AgentService:
 
 
 
-        # =====================
-        # Generate Answer
-        # =====================
-
 
         prompt = f"""
 
@@ -265,41 +234,46 @@ Pertanyaan user:
 
 Kategori:
 
-{domain}
+{category}
 
 
 
-Data dari tool:
+Data hasil pencarian:
 
 {result}
 
 
 
-Sumber:
+Informasi sumber:
 
 {citations}
 
 
 
-Aturan menjawab:
+Aturan:
 
-1. Jawab menggunakan bahasa natural.
-2. Jangan menyebut proses internal.
-3. Jangan membuat sumber palsu.
-4. Jika ada sumber, tampilkan sumber.
-5. Jika informasi kurang yakin, katakan bahwa informasi perlu diverifikasi.
-6. Untuk berita gunakan format ringkas.
+- Jawab langsung.
+- Jangan menyebut proses internal.
+- Jangan mengatakan "saya mencari".
+- Gunakan bahasa natural.
+- Jika berita, tampilkan ringkasan.
+- Jika ada sumber tampilkan:
+  nama sumber,
+  url,
+  waktu pengecekan.
+- Jangan membuat informasi tambahan yang tidak ada.
+- Jangan mengulang kalimat penutup.
 
 
 
 """
 
 
+
         return ollama_service.generate_response(
-
             prompt
-
         )
+
 
 
 
