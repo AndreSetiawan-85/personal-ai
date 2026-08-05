@@ -5,59 +5,93 @@ import { useState } from "react";
 export default function Home() {
   const [message, setMessage] = useState("");
   const [reply, setReply] = useState("");
+  const [loading, setLoading] = useState(false);
 
   async function sendMessage() {
-    const response = await fetch(
-      "http://localhost:8000/chat",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message,
-        }),
+    if (!message.trim()) return;
+
+    setReply("");
+    setLoading(true);
+
+    try {
+      const response = await fetch(
+        "http://localhost:8000/chat/stream",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message,
+          }),
+        }
+      );
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        setLoading(false);
+        return;
       }
-    );
 
-    const data = await response.json();
+      while (true) {
+        const { done, value } = await reader.read();
 
-    setReply(data.reply);
+        if (done) break;
+
+        const chunk = decoder.decode(value, {
+          stream: true,
+        });
+
+        const lines = chunk
+          .split("\n")
+          .filter((line) => line.trim());
+
+        for (const line of lines) {
+          try {
+            const data = JSON.parse(line);
+
+            if (data.response) {
+              setReply((prev) => prev + data.response);
+            }
+          } catch {
+            setReply((prev) => prev + line);
+          }
+        }
+      }
+    } catch {
+      setReply("Error connecting to backend");
+    }
+
+    setLoading(false);
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center">
-
-      <h1 className="text-4xl font-bold">
-        Personal AI
+    <main className="min-h-screen p-10">
+      <h1 className="text-3xl font-bold mb-6">
+        Personal AI Agent
       </h1>
 
-      <p className="mt-4 text-gray-600">
-        Your personal AI assistant
-      </p>
-
-      <div className="mt-8 w-96">
-
-        <input
-          className="border rounded p-3 w-full"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="Type a message..."
-        />
-
-        <button
-          onClick={sendMessage}
-          className="mt-3 bg-black text-white px-4 py-2 rounded"
-        >
-          Send
-        </button>
-
-        <div className="mt-5 border rounded p-3">
-          {reply}
-        </div>
-
+      <div className="mb-6 border rounded p-4 min-h-40 whitespace-pre-wrap">
+        {reply || "AI response will appear here..."}
       </div>
 
+      <textarea
+        className="border rounded w-full p-3"
+        rows={4}
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        placeholder="Ask something..."
+      />
+
+      <button
+        className="mt-4 bg-black text-white px-5 py-2 rounded disabled:opacity-50"
+        onClick={sendMessage}
+        disabled={loading}
+      >
+        {loading ? "Thinking..." : "Send"}
+      </button>
     </main>
   );
 }
