@@ -1,50 +1,96 @@
 from app.tools import TOOLS
-from app.services.ollama import ollama_service
-from app.services.streaming import StreamEvent
+
+from app.services.ollama import (
+    ollama_service
+)
+
+from app.services.search_router import (
+    detect_search_type
+)
+
+from app.services.citation import (
+    format_citations
+)
+
 
 
 class AgentService:
 
+
     def __init__(self):
+
         self.tools = TOOLS
 
 
-    def detect_tool(self, message: str):
+
+    def detect_tool(
+        self,
+        message: str
+    ):
+
 
         text = message.lower()
 
 
-        math_symbols = [
+
+        # =====================
+        # Calculator Detection
+        # =====================
+
+
+        math_keywords = [
+
             "+",
             "-",
             "*",
             "/",
-        ]
+            "berapa",
+            "hitung",
+            "kali",
+            "tambah",
+            "kurang",
+            "bagi",
 
-
-        if any(
-            symbol in text
-            for symbol in math_symbols
-        ):
-            return "calculator"
-
-
-
-        keywords = [
-            "berita",
-            "terbaru",
-            "hari ini",
-            "latest",
-            "news",
-            "update",
-            "sekarang",
         ]
 
 
         if any(
             keyword in text
-            for keyword in keywords
+            for keyword in math_keywords
         ):
+
+            return "calculator"
+
+
+
+
+        # =====================
+        # Web Search Detection
+        # =====================
+
+
+        domain = detect_search_type(
+            message
+        )
+
+
+        search_domains = [
+
+            "news",
+            "food",
+            "travel",
+            "shopping",
+            "coding",
+            "finance",
+            "health",
+            "entertainment",
+
+        ]
+
+
+
+        if domain in search_domains:
+
             return "web_search"
 
 
@@ -53,173 +99,209 @@ class AgentService:
 
 
 
-    def prepare_tool_result(
-        self,
-        message: str,
-        tool_name: str
-    ):
-
-        tool = self.tools[tool_name]
 
 
-        if tool_name == "calculator":
-
-            expression = (
-                message
-                .lower()
-                .replace("berapa", "")
-                .replace("hitung", "")
-                .replace("hasil", "")
-                .strip()
-            )
-
-            return tool(expression)
-
-
-
-        return tool(message)
-
-
-
-    def build_prompt(
-        self,
-        message: str,
-        tool_name: str,
-        result
-    ):
-
-        return f"""
-Kamu adalah Gwen, AI assistant.
-
-User bertanya:
-{message}
-
-
-Tool yang digunakan:
-{tool_name}
-
-
-Hasil tool:
-{result}
-
-
-Jawab user dengan bahasa natural.
-Jika ada sumber atau link, tampilkan sumbernya.
-"""
-
-
-
-    # ============================
-    # Non streaming
-    # ============================
 
     def run(
         self,
         message: str
     ):
 
-        tool_name = self.detect_tool(message)
+
+        tool_name = self.detect_tool(
+            message
+        )
+
+
+
+        domain = None
+
+        result = None
+
+        citations = []
+
+
+
+
+        # =====================
+        # Normal Chat
+        # =====================
 
 
         if not tool_name:
 
+
             return ollama_service.generate_response(
+
                 message
+
             )
 
 
-        result = self.prepare_tool_result(
-            message,
+
+
+
+        tool = self.tools.get(
             tool_name
         )
 
 
-        prompt = self.build_prompt(
-            message,
-            tool_name,
-            result
-        )
+
+        if not tool:
+
+
+            return ollama_service.generate_response(
+
+                message
+
+            )
+
+
+
+
+
+
+        # =====================
+        # Calculator
+        # =====================
+
+
+        if tool_name == "calculator":
+
+
+
+            expression = (
+
+                message
+
+                .lower()
+
+                .replace(
+                    "berapa",
+                    ""
+                )
+
+                .replace(
+                    "hitung",
+                    ""
+                )
+
+                .replace(
+                    "hasil",
+                    ""
+                )
+
+                .replace(
+                    "adalah",
+                    ""
+                )
+
+                .strip()
+
+            )
+
+
+
+            result = tool(
+                expression
+            )
+
+
+
+
+
+        # =====================
+        # Web Search
+        # =====================
+
+
+        elif tool_name == "web_search":
+
+
+
+            domain = detect_search_type(
+                message
+            )
+
+
+
+            result = tool(
+                message
+            )
+
+
+
+            citations = format_citations(
+
+                result.get(
+                    "results",
+                    []
+                )
+
+            )
+
+
+
+
+
+
+
+        # =====================
+        # Generate Answer
+        # =====================
+
+
+        prompt = f"""
+
+Kamu adalah Gwen,
+AI assistant pribadi.
+
+
+Pertanyaan user:
+
+{message}
+
+
+
+Kategori:
+
+{domain}
+
+
+
+Data dari tool:
+
+{result}
+
+
+
+Sumber:
+
+{citations}
+
+
+
+Aturan menjawab:
+
+1. Jawab menggunakan bahasa natural.
+2. Jangan menyebut proses internal.
+3. Jangan membuat sumber palsu.
+4. Jika ada sumber, tampilkan sumber.
+5. Jika informasi kurang yakin, katakan bahwa informasi perlu diverifikasi.
+6. Untuk berita gunakan format ringkas.
+
+
+
+"""
 
 
         return ollama_service.generate_response(
+
             prompt
+
         )
 
 
-
-    # ============================
-    # Streaming Agent
-    # ============================
-
-    def run_stream(
-        self,
-        message: str
-    ):
-
-        tool_name = self.detect_tool(message)
-
-
-
-        if tool_name == "web_search":
-
-            yield StreamEvent.status(
-                "Searching web..."
-            )
-
-
-        elif tool_name == "calculator":
-
-            yield StreamEvent.status(
-                "Calculating..."
-            )
-
-
-        else:
-
-            yield StreamEvent.status(
-                "Thinking..."
-            )
-
-
-
-        if tool_name:
-
-            result = self.prepare_tool_result(
-                message,
-                tool_name
-            )
-
-
-            prompt = self.build_prompt(
-                message,
-                tool_name,
-                result
-            )
-
-
-        else:
-
-            prompt = message
-
-
-
-        yield StreamEvent.status(
-            "Generating answer..."
-        )
-
-
-
-        for chunk in ollama_service.stream_response(
-            prompt
-        ):
-
-            yield StreamEvent.chunk(
-                chunk
-            )
-
-
-
-        yield StreamEvent.done()
 
 
 
