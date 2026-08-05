@@ -45,6 +45,17 @@ def chat(
 
     return ChatResponse(reply=reply)
 
+@router.get("/chat/history")
+def chat_history(
+    db: Session = Depends(get_db)
+):
+    messages = (
+        db.query(Message)
+        .order_by(Message.created_at)
+        .all()
+    )
+
+    return messages
 
 @router.post("/chat/stream")
 def chat_stream(request: ChatRequest):
