@@ -266,3 +266,13 @@ v0.1.0 Local AI Chat
 Start Phase 2:
 
 Professional Architecture Refactor
+
+## Phase 2.1 - Configuration & Performance
+
+Completed:
+
+- Added environment configuration using .env
+- Added .env.example
+- Refactored Ollama integration into service class
+- Added fast response mode using Qwen3 think=false
+- Reduced local inference time from ~15s to ~1.7s
