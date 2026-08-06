@@ -1,72 +1,40 @@
 from app.services.memory import memory_service
 
-
 class MemoryExtractor:
-
     def extract(self, message: str):
+        text = message.lower()
 
-        text = message.strip()
+        memories = []
 
-        lower = text.lower()
+        if "nama saya" in text:
+            name = message.lower().split("nama saya", 1)[1].strip()
 
-        if lower.startswith("nama saya"):
-
-            name = (
-                text[len("nama saya"):]
-                .strip()
+            memories.append(
+                {
+                    "memory": f"Nama user adalah {name.title()}",
+                    "category": "profile",
+                    "importance": 10
+                }
             )
 
-            if name:
+        if "saya suka" in text:
+            preference = message.lower().split("saya suka", 1)[1].strip()
 
-                memory_service.save_memory(
-                    "name",
-                    name
-                )
-
-                return {
-                    "key": "name",
-                    "value": name
+            memories.append(
+                {
+                    "memory": f"User suka {preference.title()}",
+                    "category": "preference",
+                    "importance": 8
                 }
-
-        if lower.startswith("saya suka"):
-
-            preference = (
-                text[len("saya suka"):]
-                .strip()
             )
 
-            if preference:
-
-                memory_service.save_memory(
-                    "preference",
-                    preference
-                )
-
-                return {
-                    "key": "preference",
-                    "value": preference
-                }
-
-        if lower.startswith("saya bekerja sebagai"):
-
-            job = (
-                text[len("saya bekerja sebagai"):]
-                .strip()
+        for item in memories:
+            memory_service.save_memory(
+                memory=item["memory"],
+                category=item["category"],
+                importance=item["importance"]
             )
 
-            if job:
-
-                memory_service.save_memory(
-                    "job",
-                    job
-                )
-
-                return {
-                    "key": "job",
-                    "value": job
-                }
-
-        return None
-
+        return memories
 
 memory_extractor = MemoryExtractor()
