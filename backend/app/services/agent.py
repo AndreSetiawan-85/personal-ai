@@ -2,15 +2,46 @@ from app.tools import TOOLS
 from app.services.ollama import ollama_service
 from app.services.search_router import detect_search_type
 from app.services.citation import format_citations
+from app.services.context import context_service
+from app.services.memory_extractor import memory_extractor
+
 
 class AgentService:
+
     def __init__(self):
         self.tools = TOOLS
+
+    def is_memory_statement(
+        self,
+        message: str
+    ):
+
+        patterns = [
+            "nama saya",
+            "saya suka",
+            "saya bekerja sebagai",
+            "saya tinggal",
+            "saya adalah",
+            "umur saya",
+        ]
+
+        text = message.lower()
+
+        return any(
+            pattern in text
+            for pattern in patterns
+        )
 
     def detect_tool(
         self,
         message: str
     ):
+
+        if self.is_memory_statement(
+            message
+        ):
+            return None
+
         text = message.lower()
 
         calculator_words = [
@@ -23,7 +54,7 @@ class AgentService:
             "kali",
             "tambah",
             "kurang",
-            "bagi"
+            "bagi",
         ]
 
         if any(
@@ -36,7 +67,7 @@ class AgentService:
             message
         )
 
-        if category:
+        if category != "general":
             return "web_search"
 
         return None
@@ -45,6 +76,11 @@ class AgentService:
         self,
         message: str
     ):
+
+        memory_extractor.extract(
+            message
+        )
+
         tool_name = self.detect_tool(
             message
         )
@@ -54,8 +90,13 @@ class AgentService:
         category = None
 
         if not tool_name:
-            return ollama_service.generate_response(
+
+            prompt = context_service.build(
                 message
+            )
+
+            return ollama_service.generate_response(
+                prompt
             )
 
         tool = self.tools.get(
@@ -63,25 +104,23 @@ class AgentService:
         )
 
         if not tool:
-            return ollama_service.generate_response(
+
+            prompt = context_service.build(
                 message
             )
 
+            return ollama_service.generate_response(
+                prompt
+            )
+
         if tool_name == "calculator":
+
             expression = (
                 message.lower()
-                .replace(
-                    "berapa",
-                    ""
-                )
-                .replace(
-                    "hitung",
-                    ""
-                )
-                .replace(
-                    "hasil",
-                    ""
-                )
+                .replace("berapa", "")
+                .replace("hitung", "")
+                .replace("hasil", "")
+                .replace("adalah", "")
                 .strip()
             )
 
@@ -90,12 +129,14 @@ class AgentService:
             )
 
         elif tool_name == "web_search":
+
             category = detect_search_type(
                 message
             )
 
             result = tool(
-                message
+                message,
+                category=category
             )
 
             citations = format_citations(
@@ -105,38 +146,35 @@ class AgentService:
                 )
             )
 
-        prompt = f"""
-Kamu adalah Gwen,
-AI assistant pribadi.
+        context = context_service.build(
+            message
+        )
 
-Pertanyaan user:
-{message}
+        prompt = f"""
+{context}
 
 Kategori:
 {category}
 
-Data hasil pencarian:
+Data hasil tool:
 {result}
 
 Informasi sumber:
 {citations}
 
-Aturan:
-- Jawab langsung.
-- Jangan menyebut proses internal.
-- Jangan mengatakan "saya mencari".
-- Gunakan bahasa natural.
-- Jika berita, tampilkan ringkasan.
-- Jika ada sumber tampilkan:
-  nama sumber,
-  url,
-  waktu pengecekan.
-- Jangan membuat informasi tambahan yang tidak ada.
-- Jangan mengulang kalimat penutup.
+Instruksi:
+
+- Kamu adalah Gwen, AI assistant pribadi.
+- Gunakan memory pengguna jika relevan.
+- Gunakan hasil tool jika tersedia.
+- Jangan membuat informasi yang tidak ada.
+- Jangan membuat URL atau sumber palsu.
+- Jawab dengan bahasa Indonesia natural.
 """
 
         return ollama_service.generate_response(
             prompt
         )
+
 
 agent_service = AgentService()
