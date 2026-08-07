@@ -10,14 +10,12 @@ TRUSTED_SOURCES = {
     "technologyreview.com": 7,
 }
 
+
 def rank_sources(results):
     ranked = []
 
     for item in results:
-        url = (
-            item.get("source", "")
-            .lower()
-        )
+        url = item.get("source", "").lower()
 
         score = 0
 
@@ -30,12 +28,10 @@ def rank_sources(results):
 
         ranked.append(item)
 
-    ranked.sort(
-        key=lambda x: x["trust_score"],
-        reverse=True
-    )
+    ranked.sort(key=lambda x: x["trust_score"], reverse=True)
 
     return ranked
+
 
 def get_best_sources(results, minimum_score=7):
     filtered = []

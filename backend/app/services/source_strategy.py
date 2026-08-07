@@ -42,8 +42,6 @@ DOMAIN_SOURCES = {
     ],
 }
 
+
 def get_priority_sources(domain):
-    return DOMAIN_SOURCES.get(
-        domain,
-        []
-    )
+    return DOMAIN_SOURCES.get(domain, [])

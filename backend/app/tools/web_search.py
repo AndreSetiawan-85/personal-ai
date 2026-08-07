@@ -1,8 +1,6 @@
 from ddgs import DDGS
 
-from app.services.source_validator import (
-    filter_trusted_results
-)
+from app.services.source_validator import filter_trusted_results
 
 TRUSTED_SOURCES = {
     "reuters.com": 10,
@@ -24,6 +22,7 @@ TRUSTED_SOURCES = {
     "booking.com": 8,
 }
 
+
 def calculate_trust_score(url: str):
     if not url:
         return 0
@@ -36,6 +35,7 @@ def calculate_trust_score(url: str):
 
     return 3
 
+
 def build_search_query(query: str, category: str = None):
     if category == "news":
         return (
@@ -47,18 +47,10 @@ def build_search_query(query: str, category: str = None):
         )
 
     if category == "food":
-        return (
-            f"{query} "
-            "site:allrecipes.com OR "
-            "site:foodnetwork.com"
-        )
+        return f"{query} " "site:allrecipes.com OR " "site:foodnetwork.com"
 
     if category == "travel":
-        return (
-            f"{query} "
-            "site:tripadvisor.com OR "
-            "site:booking.com"
-        )
+        return f"{query} " "site:tripadvisor.com OR " "site:booking.com"
 
     if category == "coding":
         return (
@@ -69,72 +61,43 @@ def build_search_query(query: str, category: str = None):
         )
 
     if category == "shopping":
-        return (
-            f"{query} "
-            "review OR comparison"
-        )
+        return f"{query} " "review OR comparison"
 
     return query
 
-def web_search(
-    query: str,
-    category: str = None,
-    max_results: int = 5
-):
+
+def web_search(query: str, category: str = None, max_results: int = 5):
     results = []
 
-    search_query = build_search_query(
-        query,
-        category
-    )
+    search_query = build_search_query(query, category)
 
     try:
         with DDGS() as ddgs:
-            search_results = ddgs.text(
-                search_query,
-                max_results=max_results
-            )
+            search_results = ddgs.text(search_query, max_results=max_results)
 
             for item in search_results:
-                source = item.get(
-                    "href"
-                )
+                source = item.get("href")
 
                 results.append(
                     {
-                        "title": item.get(
-                            "title"
-                        ),
+                        "title": item.get("title"),
                         "source": source,
-                        "snippet": item.get(
-                            "body"
-                        ),
-                        "trust_score": calculate_trust_score(
-                            source
-                        )
+                        "snippet": item.get("body"),
+                        "trust_score": calculate_trust_score(source),
                     }
                 )
 
         # ranking trust score
-        results.sort(
-            key=lambda x: x.get(
-                "trust_score",
-                0
-            ),
-            reverse=True
-        )
+        results.sort(key=lambda x: x.get("trust_score", 0), reverse=True)
 
         # filter sumber
-        filtered_results = filter_trusted_results(
-            results,
-            minimum_score=50
-        )
+        filtered_results = filter_trusted_results(results, minimum_score=50)
 
         return {
             "query": query,
             "search_query": search_query,
             "category": category,
-            "results": filtered_results
+            "results": filtered_results,
         }
 
     except Exception as e:
@@ -142,5 +105,5 @@ def web_search(
             "query": query,
             "search_query": search_query,
             "results": [],
-            "error": str(e)
+            "error": str(e),
         }

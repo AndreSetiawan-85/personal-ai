@@ -24,58 +24,39 @@ TRUSTED_DOMAINS = {
     ],
 }
 
+
 def get_domain(url: str):
     try:
-        return (
-            urlparse(url)
-            .netloc
-            .lower()
-            .replace("www.", "")
-        )
+        return urlparse(url).netloc.lower().replace("www.", "")
     except Exception:
         return ""
+
 
 def validate_source(url: str):
     domain = get_domain(url)
 
     if not domain:
-        return {
-            "level": "unknown",
-            "score": 20
-        }
+        return {"level": "unknown", "score": 20}
 
     for source in TRUSTED_DOMAINS["high"]:
         if source in domain:
-            return {
-                "level": "high",
-                "score": 100
-            }
+            return {"level": "high", "score": 100}
 
     for source in TRUSTED_DOMAINS["medium"]:
         if source in domain:
-            return {
-                "level": "medium",
-                "score": 70
-            }
+            return {"level": "medium", "score": 70}
 
-    return {
-        "level": "normal",
-        "score": 50
-    }
+    return {"level": "normal", "score": 50}
+
 
 def filter_trusted_results(results, minimum_score=50):
     validated = []
 
     for item in results:
-        validation = validate_source(
-            item.get("source")
-        )
+        validation = validate_source(item.get("source"))
 
         item.update(
-            {
-                "source_level": validation["level"],
-                "source_score": validation["score"]
-            }
+            {"source_level": validation["level"], "source_score": validation["score"]}
         )
 
         if validation["score"] >= minimum_score:

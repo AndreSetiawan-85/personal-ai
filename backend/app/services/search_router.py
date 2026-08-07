@@ -65,6 +65,7 @@ SEARCH_DOMAINS = {
     ],
 }
 
+
 def detect_search_type(message: str):
     text = message.lower()
     scores = {}
@@ -78,10 +79,7 @@ def detect_search_type(message: str):
 
         scores[domain] = score
 
-    best_domain = max(
-        scores,
-        key=scores.get
-    )
+    best_domain = max(scores, key=scores.get)
 
     if scores[best_domain] > 0:
         return best_domain

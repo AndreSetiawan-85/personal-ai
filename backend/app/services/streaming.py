@@ -1,5 +1,6 @@
 import json
 
+
 class StreamEvent:
     @staticmethod
     def status(message: str):

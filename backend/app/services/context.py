@@ -1,40 +1,46 @@
-from app.services.memory import memory_service
+from app.services.memory_retriever import memory_retriever
 
 class ContextService:
-    def build(self, message: str):
-        memories = memory_service.get_memories()
-        history = memory_service.get_recent(limit=10)
+    def build_context(self, query):
+        memories = memory_retriever.retrieve(query, limit=5)
 
-        memory_text = "Tidak ada memory."
-        if memories:
-            memory_text = "\n".join(
-                [
-                    f"{key}: {value}"
-                    for key, value in memories.items()
-                ]
-            )
+        if not memories:
+            return ""
 
-        history_text = "Tidak ada riwayat."
-        if history:
-            history_text = "\n".join(
-                [
-                    f"{item['role']}: {item['message']}"
-                    for item in history
-                ]
-            )
+        query_lower = query.lower()
 
-        return f"""
-Kamu adalah Gwen,
-AI assistant pribadi.
+        context = "Memory user:\n"
 
-Memory pengguna:
-{memory_text}
+        for item in memories:
+            content = item.get("content", "").lower()
+            tags = [tag.lower() for tag in item.get("tags", [])]
 
-Riwayat percakapan:
-{history_text}
+            if (
+                "proyek" in query_lower
+                or "project" in query_lower
+                or "kerja" in query_lower
+                or "pekerjaan" in query_lower
+            ):
+                if "project" in tags or "ai" in tags or "software" in tags:
+                    context += f"- {item['content']}\n"
 
-Pesan terbaru:
-{message}
-"""
+            elif (
+                "kebiasaan" in query_lower
+                or "habit" in query_lower
+                or "fokus" in query_lower
+            ):
+                if "habit" in tags or "productivity" in tags or "work" in tags:
+                    context += f"- {item['content']}\n"
+
+            else:
+                context += f"- {item['content']}\n"
+
+        if context == "Memory user:\n":
+            return ""
+
+        print("=== FINAL CONTEXT ===")
+        print(context)
+
+        return context
 
 context_service = ContextService()

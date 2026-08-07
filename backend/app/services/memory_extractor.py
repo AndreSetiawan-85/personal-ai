@@ -1,40 +1,121 @@
+from app.services.ollama import ollama_service
 from app.services.memory import memory_service
+from app.services.memory_parser import memory_parser
+from app.services.memory_prompt import MEMORY_EXTRACTION_PROMPT
 
 class MemoryExtractor:
-    def extract(self, message: str):
-        text = message.lower()
 
-        memories = []
+    def extract(self, message):
 
-        if "nama saya" in text:
-            name = message.lower().split("nama saya", 1)[1].strip()
+        if not message or not message.strip():
+            return []
 
-            memories.append(
-                {
-                    "memory": f"Nama user adalah {name.title()}",
-                    "category": "profile",
-                    "importance": 10
-                }
+        prompt = (
+            MEMORY_EXTRACTION_PROMPT
+            + "\n"
+            + message.strip()
+        )
+
+        try:
+            response = ollama_service.generate_response(
+                prompt
             )
 
-        if "saya suka" in text:
-            preference = message.lower().split("saya suka", 1)[1].strip()
-
-            memories.append(
-                {
-                    "memory": f"User suka {preference.title()}",
-                    "category": "preference",
-                    "importance": 8
-                }
+            print("===== RAW MEMORY RESPONSE =====")
+            print(response)
+            print("===============================")
+            
+            memories = memory_parser.parse(
+                response
             )
+
+        except Exception as e:
+            print(
+                "Memory extraction error:",
+                e
+            )
+            return []
+
+        saved = []
 
         for item in memories:
-            memory_service.save_memory(
-                memory=item["memory"],
-                category=item["category"],
-                importance=item["importance"]
+
+            if not isinstance(item, dict):
+                continue
+
+            content = item.get(
+                "content"
             )
 
-        return memories
+            tags = item.get(
+                "tags",
+                []
+            )
+
+            importance = item.get(
+                "importance",
+                5
+            )
+
+            confidence = item.get(
+                "confidence",
+                0.8
+            )
+
+            if not content:
+                continue
+
+            try:
+                importance = int(
+                    importance
+                )
+
+            except Exception:
+                importance = 5
+
+            importance = max(
+                1,
+                min(
+                    importance,
+                    10
+                )
+            )
+
+            try:
+                confidence = float(
+                    confidence
+                )
+
+            except Exception:
+                confidence = 0.8
+
+            confidence = max(
+                0.0,
+                min(
+                    confidence,
+                    1.0
+                )
+            )
+
+            if not isinstance(tags, list):
+                tags = []
+
+            memory_service.save_memory(
+                content=content,
+                tags=tags,
+                importance=importance,
+                confidence=confidence
+            )
+
+            saved.append(
+                {
+                    "content": content,
+                    "tags": tags,
+                    "importance": importance,
+                    "confidence": confidence
+                }
+            )
+
+        return saved
 
 memory_extractor = MemoryExtractor()

@@ -3,6 +3,7 @@ import time
 CACHE = {}
 CACHE_EXPIRE = 300  # 5 menit
 
+
 def get_cache(key):
     data = CACHE.get(key)
 
@@ -17,8 +18,6 @@ def get_cache(key):
 
     return data["value"]
 
+
 def set_cache(key, value):
-    CACHE[key] = {
-        "time": time.time(),
-        "value": value
-    }
+    CACHE[key] = {"time": time.time(), "value": value}

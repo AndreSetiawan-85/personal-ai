@@ -16,14 +16,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 class ChatRequest(BaseModel):
     message: str
 
+
 @app.get("/")
 def home():
-    return {
-        "message": "Hello Personal AI"
-    }
+    return {"message": "Hello Personal AI"}
+
 
 @app.post("/chat")
 def chat(request: ChatRequest):
@@ -35,11 +36,9 @@ def chat(request: ChatRequest):
             "stream": False,
             "think": False,
         },
-        timeout=120
+        timeout=120,
     )
 
     data = ollama_response.json()
 
-    return {
-        "reply": data["response"]
-    }
+    return {"reply": data["response"]}
