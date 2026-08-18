@@ -1,3 +1,5 @@
+import json
+
 from app.core.config import settings
 from app.services.citation import format_citations
 from app.services.context import context_service
@@ -11,60 +13,123 @@ class AgentService:
     def __init__(self):
         self.tools = discover_tools()
 
-    def _select_tool(self, message):
-        tool_names = self.tools.get_names()
+    def _build_tool_prompt(self, message):
+        schemas = self.tools.get_schemas()
 
-        if not tool_names:
-            return None, message
-
-        prompt = f"""
+        return f"""
 Determine whether the user message requires one of the available tools.
 
-Available tools:
-{tool_names}
+Available tool schemas:
+{json.dumps(
+    schemas,
+    indent=2,
+    ensure_ascii=False,
+    default=str,
+)}
 
-Return only a JSON object using this format:
+Return ONLY a JSON object using this format:
+
 {{
     "tool": null,
-    "input": ""
+    "arguments": {{}}
 }}
 
-If a tool is needed, "tool" must contain exactly one name from the available tools.
-If no tool is needed, use null.
+If a tool is required:
 
-The "input" field must contain the value that should be passed to the selected tool.
+- "tool" must contain exactly one available tool name.
+- "arguments" must be a JSON object.
+- Argument names must match the selected tool schema.
+- Required arguments must be provided.
+- Optional arguments may be omitted.
+- Do not invent arguments.
+- Do not include arguments that are not defined by the selected tool.
+
+If no tool is required:
+
+{{
+    "tool": null,
+    "arguments": {{}}
+}}
 
 User message:
 {message}
 """
+
+    def _select_tool(self, message):
+        if not self.tools.get_names():
+            return None, {}
+
+        prompt = self._build_tool_prompt(message)
 
         try:
             response = ollama_service.generate_response(prompt)
             data = memory_parser.parse_object(response)
 
             tool_name = data.get("tool")
-            tool_input = data.get("input") or message
+            arguments = data.get("arguments", {})
 
-            if tool_name not in tool_names:
-                return None, message
+            if not tool_name:
+                return None, {}
 
-            return tool_name, tool_input
+            if not isinstance(arguments, dict):
+                return None, {}
+
+            definition = self.tools.get_definition(tool_name)
+
+            if definition is None:
+                return None, {}
+
+            validated_arguments = self._validate_arguments(
+                definition,
+                arguments,
+            )
+
+            if validated_arguments is None:
+                return None, {}
+
+            return tool_name, validated_arguments
 
         except Exception as e:
             print("Tool selection error:", e)
-            return None, message
+            return None, {}
 
-    def _execute_tool(self, tool_name, tool_input):
+    @staticmethod
+    def _validate_arguments(definition, arguments):
+        parameters = {
+            parameter.name: parameter
+            for parameter in definition.parameters
+        }
+
+        unknown_arguments = set(arguments) - set(parameters)
+
+        if unknown_arguments:
+            return None
+
+        validated = {}
+
+        for parameter in definition.parameters:
+            if parameter.name in arguments:
+                validated[parameter.name] = arguments[
+                    parameter.name
+                ]
+                continue
+
+            if parameter.required:
+                return None
+
+        return validated
+
+    def _execute_tool(self, tool_name, arguments):
         if not tool_name:
             return None, []
 
-        tool = self.tools.get(tool_name)
+        definition = self.tools.get_definition(tool_name)
 
-        if not tool:
+        if definition is None:
             return None, []
 
         try:
-            result = tool(tool_input)
+            result = definition.function(**arguments)
 
             citations = []
 
@@ -77,7 +142,10 @@ User message:
 
         except Exception as e:
             print("Tool execution error:", e)
-            return None, []
+            return {
+                "success": False,
+                "error": str(e),
+            }, []
 
     def run(self, user_id, message):
         if not message or not message.strip():
@@ -107,11 +175,11 @@ User message:
                 ),
             )
 
-        tool_name, tool_input = self._select_tool(message)
+        tool_name, tool_arguments = self._select_tool(message)
 
         result, citations = self._execute_tool(
             tool_name,
-            tool_input,
+            tool_arguments,
         )
 
         prompt = f"""
@@ -126,6 +194,12 @@ User memory:
 User message:
 {message}
 
+Selected tool:
+{tool_name}
+
+Tool arguments:
+{tool_arguments}
+
 Tool result:
 {result}
 
@@ -137,6 +211,7 @@ Instructions:
 - Treat user memory as information about the current user.
 - Do not invent personal information about the user.
 - Use tool results when they are available.
+- Do not claim that a tool was used when no tool was executed.
 - Answer naturally and directly.
 """
 
