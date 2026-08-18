@@ -20,7 +20,7 @@ class Message(Base):
     conversation_id = Column(
         Integer,
         ForeignKey("conversations.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,
         index=True,
     )
 
@@ -37,7 +37,7 @@ class Message(Base):
     created_at = Column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
-        nullable=False,
+        nullable=True,
         index=True,
     )
 

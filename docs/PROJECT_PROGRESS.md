@@ -1,962 +1,900 @@
-PERSONAL AI ASSISTANT — PROJECT PROGRESS & DEVELOPMENT PLAN
+# PERSONAL AI ASSISTANT — PROJECT PROGRESS
 
-PROJECT OVERVIEW
+## 1. PROJECT OVERVIEW
 
-Project:
-personal-ai
+Project: personal-ai
 
 GitHub:
 https://github.com/AndreSetiawan-85/personal-ai
 
-Project ini akan dikembangkan menjadi aplikasi Personal AI Assistant yang dapat digunakan oleh banyak pengguna yang memiliki akses ke aplikasi.
+The project is being developed as a multi-user Personal AI Assistant.
 
-Tujuan utama:
-- Multi-user
-- User memiliki conversation sendiri
-- Conversation memiliki messages
-- AI memiliki universal memory
-- Memory tidak hard-coded satu per satu
-- Tools tidak hard-coded satu per satu
-- Sistem siap dikembangkan menjadi aplikasi yang benar-benar digunakan orang lain
-- Architecture cukup rapi untuk capstone project
-- Tidak menggunakan komentar/note berlebihan yang terlihat seperti AI-generated
-- Jika comment diperlukan, gunakan bahasa Inggris
-- Perubahan coding dilakukan satu file per step
-- Setiap file diberikan dalam bentuk full coding
-- Jangan memberikan banyak file sekaligus
-- Jangan menjalankan migration/database destructive operation tanpa review terlebih dahulu
+Primary goals:
 
-DEVELOPMENT PHILOSOPHY
+- Multi-user application.
+- Each user owns their conversations.
+- Conversations contain messages.
+- AI has universal user memory.
+- Memory must not depend on manually defined rules for each fact.
+- Tools must be dynamically registered and discoverable.
+- Adding tools should not require modifying the agent with tool-specific branches.
+- Existing functionality must be preserved during refactoring.
+- Existing user data must not be deleted.
+- Database migrations must be reviewed before execution.
+- Architecture should remain suitable for a capstone project and future production development.
 
-MEMORY
+---
 
-Memory AI harus bersifat universal.
+# 2. DEVELOPMENT RULES
 
-Tidak boleh menggunakan logic seperti:
+These rules apply to all future implementation work.
 
-if user_says_coffee:
-    remember_coffee()
+## 2.1 No hard-coded memory rules
 
-atau hard-coded rule satu per satu.
+Do not implement memory using manually defined rules for specific user facts.
 
-Memory harus menggunakan sistem yang dapat menangani berbagai jenis informasi tanpa developer mendefinisikan setiap jenis memory secara manual.
+Memory must be handled generically through:
 
-Target:
-
-Conversation
-    ↓
-Memory extraction
-    ↓
-Memory representation
-    ↓
+User message
+↓
+Memory engine
+↓
+Memory candidate extraction
+↓
+Validation
+↓
+Conflict resolution
+↓
+Embedding
+↓
 Storage
-    ↓
+↓
 Retrieval
-    ↓
+↓
 Context injection
 
-TOOLS
+The developer must not manually define every possible type of user memory.
 
-Tools juga tidak boleh hard-coded satu per satu.
+---
+
+## 2.2 No hard-coded tool routing
+
+Tool selection and execution must remain generic.
+
+The agent must not contain logic that depends on individual tool names.
 
 Target architecture:
 
+Tool modules
+↓
+Tool decorators
+↓
 Tool Registry
-    ↓
-Tool Metadata
-    ↓
-Available Tools
-    ↓
-AI decides which tool to use
-    ↓
-Tool Execution
+↓
+Tool metadata
+↓
+Parameter schema
+↓
+LLM tool selection
+↓
+Generic argument handling
+↓
+Generic tool execution
 
-Bukan menggunakan banyak if/else seperti:
+Adding a new tool should primarily require creating/registering the tool itself.
 
-if user_asks_weather:
-    weather()
+The agent must not need to be modified for every new tool.
 
-if user_asks_search:
-    search()
+---
 
-if user_asks_x:
-    tool_x()
+## 2.3 One file per implementation step
 
-TECHNOLOGY STACK
+Normal implementation steps modify one file at a time.
 
-Backend saat ini menggunakan:
+For each coding step:
 
-Python
-FastAPI
-SQLAlchemy
-SQLite
-Alembic
-Pydantic v2
-pydantic-settings
-Uvicorn
+1. Identify the target file.
+2. Explain the purpose.
+3. Provide the full contents of the file.
+4. Test the change.
+5. Only then continue to the next step.
 
-Important package versions:
+Do not repeatedly rewrite the same file unless a real architectural reason exists.
 
-fastapi==0.141.1
-pydantic==2.13.4
-pydantic_core==2.46.4
-pydantic-settings==2.14.2
-SQLAlchemy==2.0.51
-alembic==1.18.5
-uvicorn==0.52.1
-hpack==4.2.0
+---
+
+## 2.4 Preserve existing functionality
+
+Do not replace an existing file with a simplified version that removes existing functionality.
+
+Before modifying a file:
+
+- inspect the current implementation;
+- understand its dependencies;
+- preserve existing behavior;
+- add or refactor incrementally.
+
+---
+
+## 2.5 Database safety
+
+Never execute destructive database operations without reviewing the migration/data strategy first.
+
+Existing:
+
+- messages
+- memories
+- users
+- conversations
+
+must not be deleted accidentally.
+
+Do not blindly execute:
+
+alembic upgrade head
+
+when the migration has not yet been reviewed against the actual local database.
+
+---
+
+# 3. TECHNOLOGY STACK
+
+Current backend stack:
+
+- Python
+- FastAPI
+- SQLAlchemy
+- SQLite
+- Alembic
+- Pydantic v2
+- pydantic-settings
+- Uvicorn
+- Ollama
+- Embedding service
+- DuckDuckGo/DDGS web search
 
 Python environment:
 
 Python 3.14
-
-Virtual environment:
-
 backend/venv/
 
-AUDIT PROGRESS
+---
 
-Audit 1 — completed
-Audit 2 — completed
-Audit 3 — completed
-Audit 4 — completed
-Audit 5 — completed
-Audit 6 — completed
-Audit 7 — completed
-Audit 8 — completed
+# 4. AUDIT STATUS
 
-IMPORTANT AUDIT DECISIONS
+The initial architecture audit phase is completed.
 
-- Application akan menjadi multi-user.
-- Memory harus universal dan tidak hard-coded.
-- Tools harus dynamic dan tidak hard-coded.
-- Existing functionality harus dipertahankan ketika melakukan perubahan.
-- Jangan mengganti file existing dengan versi sederhana yang menghilangkan router atau fitur.
-- Database lama harus dipertahankan.
-- Existing memories dan messages tidak boleh hilang.
+Completed audit areas include:
 
-IMPLEMENTATION PROGRESS
+- application structure;
+- database architecture;
+- migration architecture;
+- memory architecture;
+- memory ownership;
+- retrieval;
+- embeddings;
+- conflict resolution;
+- lifecycle;
+- search architecture;
+- configuration;
+- tool architecture;
+- tool discovery;
+- tool schemas;
+- generic tool execution.
 
-Step 1 — completed
-Initial model/database work dimulai.
+Future work should continue from the current implementation state rather than restarting the audit.
 
-Message model awal:
+---
 
-from datetime import datetime
+# 5. DATABASE / ALEMBIC STATUS
 
-from sqlalchemy import Column, DateTime, Integer, String, Text
+Alembic has been introduced.
 
-from app.database import Base
+Current migration chain:
 
-
-class Message(Base):
-    __tablename__ = "messages"
-
-    id = Column(Integer, primary_key=True, index=True)
-    role = Column(String, nullable=False)
-    content = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-Step 2 — completed
-
-Step 3 — completed
-
-Step 4 — completed
-
-Step 5 — completed
-
-Step 6 — completed
-
-Step 7 — backend startup testing completed.
-
-CONFIGURATION PROBLEMS THAT WERE FIXED
-
-DATABASE_URL
-
-Encountered:
-
-AttributeError: 'Settings' object has no attribute 'DATABASE_URL'
-
-Configuration was updated.
-
-PYDANTIC SETTINGS
-
-Encountered:
-
-No module named pydantic_settings
-
-Then:
-
-PydanticImportError:
-BaseSettings has been moved to the pydantic-settings package.
-
-Resolved by using pydantic-settings with Pydantic v2.
-
-EMBED_MODEL_NAME
-
-Encountered:
-
-AttributeError: 'Settings' object has no attribute 'EMBED_MODEL_NAME'
-
-Configuration was updated.
-
-INIT_DB
-
-Encountered:
-
-ImportError: cannot import name 'init_db' from 'app.database'
-
-init_db was restored/added.
-
-STEP 8C
-
-Step 8C completed successfully.
-
-STEP 9 — REQUIREMENTS
-
-backend/requirements.txt was updated.
-
-Important dependencies:
-
-alembic==1.18.5
-pydantic-settings==2.14.2
-
-There was an incorrect suggestion to use:
-
-hpack==4.2.1
-
-but pip showed that version was unavailable.
-
-Correct version:
-
-hpack==4.2.0
-
-Step 9 completed successfully.
-
-STEP 10 — MAIN.PY
-
-Initially main.py was accidentally simplified and removed the existing chat router.
-
-Swagger then only showed the root endpoint.
-
-This was fixed.
-
-Important existing code:
-
-from app.api.chat import router as chat_router
-
-and:
-
-app.include_router(chat_router)
-
-The model imports are also loaded:
-
-from app.models import Conversation, Message, User
-
-Swagger is working and chat endpoints are visible.
-
-Step 10 completed successfully.
-
-ALEMBIC SETUP
-
-STEP 11
-
-Created:
-
-backend/alembic.ini
-
-Step 11 completed.
-
-STEP 12
-
-Created:
-
-backend/alembic/env.py
-
-Important imports:
-
-from app.models import Conversation, Message, User
-
-Alembic metadata:
-
-target_metadata = Base.metadata
-
-Alembic gets the database URL from:
-
-settings.DATABASE_URL
-
-Step 12 completed.
-
-STEP 13
-
-Created:
-
-backend/alembic/script.py.mako
-
-Step 13 completed.
-
-DATABASE INSPECTION
-
-Database:
-
-backend/personal_ai.db
-
-Alembic successfully connected to SQLite.
-
-Initially:
-
-alembic current
-
-showed no migration revision.
-
-STEP 15 — BASELINE
-
-Created:
-
-backend/alembic/versions/ab1a31523017_baseline.py
-
-Revision:
-
+<base>
+↓
+974c59928e43
+↓
 ab1a31523017
-
-Then executed:
-
-alembic stamp ab1a31523017
-
-No existing application data was deleted.
-
-STEP 16
-
-Confirmed:
-
-ab1a31523017 (head)
-
-Current database baseline is:
-
-ab1a31523017
-
-AUTOGENERATED MIGRATION
-
-Command:
-
-alembic revision --autogenerate -m "add user conversations and message relationships"
-
-Generated:
-
-backend/alembic/versions/cdad530a1797_add_user_conversations_and_message_.py
-
-Revision:
-
+↓
 cdad530a1797
 
-Parent:
+Current known revisions:
 
+974c59928e43
 ab1a31523017
+cdad530a1797
 
-IMPORTANT PROBLEMS FOUND
+Latest migration:
 
-Autogenerate detected:
+cdad530a1797
+add user conversations and message relationships
 
-Detected removed table 'memories'
+The migration was reviewed because autogenerated migration operations required careful handling to avoid destructive changes.
 
-This was dangerous because memories still contains data.
+The migration must not:
 
-The generated migration originally contained:
+- delete the memories table;
+- delete existing memory records;
+- force existing messages into invalid ownership;
+- make conversation ownership invalid for legacy messages.
 
-op.drop_table('memories')
+Before executing any pending migration, the actual local database must be inspected again.
 
-This must NOT happen.
+---
 
-Autogenerate also detected:
+# 6. DATABASE ARCHITECTURE
+
+Current target relationship:
+
+User
+├── Conversations
+│   └── Messages
+│
+└── Memories
+
+Message ownership:
 
 messages.user_id
 messages.conversation_id
 
-These changes are expected.
-
-However it also attempted:
-
-conversation_id nullable=False
-
-This is unsafe because there are already 14 existing messages without conversation_id.
-
-It also attempted to change created_at to NOT NULL, which is unnecessary for this migration.
-
-CURRENT SAFE MIGRATION
-
-The autogenerated migration was replaced with:
-
-"""add user conversations and message relationships
-
-Revision ID: cdad530a1797
-Revises: ab1a31523017
-Create Date: 2026-08-18 14:48:11.525845
-"""
-
-from typing import Sequence, Union
-
-import sqlalchemy as sa
-from alembic import op
-
-
-revision: str = "cdad530a1797"
-down_revision: Union[str, Sequence[str], None] = "ab1a31523017"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
-
-
-def upgrade() -> None:
-    with op.batch_alter_table("messages", schema=None) as batch_op:
-        batch_op.add_column(
-            sa.Column(
-                "user_id",
-                sa.Integer(),
-                nullable=True,
-            )
-        )
-        batch_op.add_column(
-            sa.Column(
-                "conversation_id",
-                sa.Integer(),
-                nullable=True,
-            )
-        )
-        batch_op.create_index(
-            "ix_messages_user_id",
-            ["user_id"],
-            unique=False,
-        )
-        batch_op.create_index(
-            "ix_messages_conversation_id",
-            ["conversation_id"],
-            unique=False,
-        )
-        batch_op.create_foreign_key(
-            "fk_messages_conversation_id",
-            "conversations",
-            ["conversation_id"],
-            ["id"],
-            ondelete="CASCADE",
-        )
+Conversation ownership:
 
+conversation.user_id
 
-def downgrade() -> None:
-    with op.batch_alter_table("messages", schema=None) as batch_op:
-        batch_op.drop_constraint(
-            "fk_messages_conversation_id",
-            type_="foreignkey",
-        )
-        batch_op.drop_index("ix_messages_conversation_id")
-        batch_op.drop_index("ix_messages_user_id")
-        batch_op.drop_column("conversation_id")
-        batch_op.drop_column("user_id")
+Memory ownership:
 
-IMPORTANT:
-This migration has NOT been executed yet.
+memory.user_id
 
-CURRENT DATABASE STATE
+The final architecture must ensure that authenticated users cannot access another user's:
 
-Database inspection showed:
+- conversations;
+- messages;
+- memories;
+- private tool-related data.
 
-users = 0
-conversations = 0
-messages = 14
-memories = 3
+---
 
-Tables:
+# 7. IMPLEMENTATION PROGRESS
 
-alembic_version
-conversations
-memories
-messages
-users
+## Foundation
 
-Therefore:
+### Steps 1–16 — completed
 
-14 existing messages
-3 existing memories
-0 users
-0 conversations
+Initial application, database, service, configuration, Alembic, migration, and backend foundation work completed.
 
-CURRENT MESSAGE DATA
+---
 
-Existing messages are one chronological sequence:
+# 8. DATABASE MIGRATION AUDIT
 
-1 | user
-2 | assistant
-3 | user
-4 | assistant
-5 | user
-6 | assistant
-7 | user
-8 | assistant
-9 | user
-10 | assistant
-11 | user
-12 | assistant
-13 | user
-14 | assistant
+## Step 17 — completed
 
-They represent an existing conversation.
+Migration/data architecture audit completed.
 
-Messages currently do not have conversation_id in the old schema.
+### Step 17A — completed
 
-CURRENT DATABASE SAFETY STATUS
+Migration audited for unsafe autogenerated operations.
 
-IMPORTANT:
+### Step 17B — completed
 
-Do NOT run:
+Migration revised to preserve existing data.
 
-alembic upgrade head
+### Step 17C — completed
 
-until the migration/data strategy is confirmed.
+Existing messages inspected.
 
-The database currently still contains:
-
-14 messages
-3 memories
-
-and no users/conversations.
-
-NEXT IMMEDIATE STEP
-
-Inspect existing memories.
-
-Run:
-
-sqlite3 personal_ai.db
-
-Then:
-
-SELECT * FROM memories;
-
-Then:
-
-.quit
-
-Send the result.
-
-If memory content contains sensitive information, redact the content before sending.
-
-The main things we need to understand are:
-
-- columns
-- IDs
-- structure
-- relationships to messages/users
-- existing metadata
-- embedding storage
-
-NEXT DEVELOPMENT ROADMAP
-
-STEP 17D — MEMORY INSPECTION
-
-Inspect existing memory records.
-
-Goal:
-
-Understand existing memory architecture before changing it.
-
-STEP 18 — SAFE SCHEMA MIGRATION
-
-Apply safe schema migration.
-
-Expected additions:
-
-messages.user_id
-messages.conversation_id
-
-Initially nullable.
-
-Do NOT delete memories.
-
-STEP 19 — DATA OWNERSHIP
-
-Because:
-
-users = 0
-conversations = 0
-
-we need a deliberate strategy for old data.
-
-Do not silently create fake users or fake credentials.
-
-STEP 20 — BACKFILL OLD MESSAGES
-
-Conceptually:
-
-14 old messages
-    ↓
-legacy conversation
-    ↓
-conversation_id assigned
-
-Exact implementation depends on the existing user/memory architecture.
-
-STEP 21 — VERIFY MIGRATION
-
-Check:
-
-SELECT COUNT(*) FROM messages;
-
-Expected:
+Known historical message count:
 
 14
 
-Check:
+### Step 17D — completed
 
-SELECT COUNT(*) FROM messages
-WHERE conversation_id IS NULL;
+Existing memory architecture inspected.
 
-Eventually expected:
+Memory table and metadata reviewed.
 
-0
+---
 
-STEP 22 — ENFORCE NOT NULL
+# 9. MEMORY ARCHITECTURE
 
-Only after all existing messages have valid conversation IDs should conversation_id become NOT NULL.
+## Step 18 — completed
 
-AUTHENTICATION PHASE
+Memory schema/service architecture extended for the user-aware architecture.
 
-After database architecture is stable:
+## Step 19 — completed
 
-- User registration
-- User login
-- Password hashing
-- JWT/session authentication
-- Authenticated API requests
+Memory ownership architecture introduced.
 
-Users must not be able to access another user's:
+Memory operations now support user-specific context rather than treating all memory as globally shared application data.
 
-- conversations
-- messages
-- memories
+## Step 20 — completed
 
-MULTI-USER ISOLATION
+Memory retrieval updated to support user ownership and semantic retrieval.
 
-Target:
+## Step 21 — completed
 
-User A
- ├── Conversation 1
- ├── Conversation 2
- └── Memories
+Memory conflict resolution architecture implemented.
 
-User B
- ├── Conversation 1
- ├── Conversation 2
- └── Memories
+Current architecture:
 
-Every authenticated query must be scoped by the current user.
-
-MEMORY SYSTEM
-
-The current memories table contains 3 records.
-
-Memory must become universal.
-
-It should be able to represent:
-
-- preferences
-- facts
-- habits
-- goals
-- relationships
-- projects
-- context
-- corrections
-- temporal information
-
-without developer manually defining each memory type.
-
-Target memory pipeline:
-
-New message
-    ↓
-Memory candidate extraction
-    ↓
-Validation
-    ↓
-Deduplication
-    ↓
-Importance/confidence
-    ↓
+New memory candidate
+↓
 Embedding
-    ↓
-Storage
-    ↓
-Retrieval
-    ↓
-Context injection
+↓
+Find similar active memory
+↓
+LLM conflict judge
+↓
+duplicate / update / unrelated
+↓
+Save / touch / supersede
 
-Memory lifecycle should eventually support:
+## Step 22 — completed
 
-- new memory
-- updated memory
-- superseded memory
-- deleted/inactive memory
-- confidence
-- importance
-- last accessed
-- access count
+Memory lifecycle architecture introduced.
 
-TOOL SYSTEM
+Supported concepts include:
 
-Tools must be dynamic.
+- active memory;
+- access tracking;
+- importance;
+- confidence;
+- superseded memory;
+- updated memory;
+- lifecycle maintenance.
 
-Target:
+## Step 23 — completed
+
+Memory architecture audit and refactoring completed.
+
+Memory does not depend on manually defining individual user facts.
+
+## Step 23A — completed
+
+Memory engine architecture consolidated.
+
+Current flow:
+
+User message
+↓
+Memory Engine
+↓
+Memory extraction
+↓
+Conflict Resolver
+↓
+Memory storage
+
+Memory retrieval is performed when the memory engine determines that existing context is relevant.
+
+---
+
+# 10. CONFIGURATION / SEARCH ARCHITECTURE
+
+## Step 24 — completed
+
+Configuration was moved toward environment-driven settings.
+
+Search-related operational configuration is externalized through application settings.
+
+Configuration includes:
+
+- trusted sources;
+- search categories;
+- default result count;
+- trust thresholds;
+- default trust score.
+
+Search categories can be expanded through configuration without requiring search implementation rewrites for every category.
+
+---
+
+# 11. TOOL ARCHITECTURE
+
+## Step 24C-1 — completed
+
+Tool registry foundation introduced.
+
+Tools can register themselves with metadata.
+
+## Step 24C-2 — completed
+
+Dynamic tool discovery introduced.
+
+The application can discover tool modules dynamically.
+
+## Step 24C-3 — completed
+
+Tool registration and discovery integration completed.
+
+Tools are registered through the tool registry.
+
+## Step 24C-4 — completed
+
+Dynamic tool execution architecture verified.
+
+Architecture:
 
 Tool Registry
-    ↓
-Tool definitions
-    ↓
-Tool metadata/schema
-    ↓
+↓
+Tool lookup
+↓
+Generic execution
+
+## Step 24C-5 — completed
+
+Agent integration with the dynamic registry completed.
+
+The agent obtains available tools from the registry.
+
+## Step 24C-6 — completed
+
+Dynamic tool architecture finalized.
+
+The agent executes tools generically through registry lookup.
+
+Tool-specific implementation remains inside the tool itself.
+
+## Step 24C-7 — completed
+
+Tool parameter schema architecture introduced.
+
+The registry inspects registered function signatures.
+
+Each tool can expose:
+
+- name;
+- description;
+- parameter name;
+- parameter type;
+- required/optional status;
+- default value.
+
+## Step 24C-8 — completed
+
+Tool architecture finalized.
+
+Current registry capabilities:
+
+Tool discovery
+↓
+Tool registration
+↓
+Tool definition
+↓
+Parameter inspection
+↓
+Parameter schema
+↓
 LLM tool selection
-    ↓
-Tool execution
+↓
+Generic execution
 
-Adding a new tool should ideally only require registering the tool rather than editing many if/else statements.
+The architecture is ready for additional tools without requiring tool-specific routing changes inside the agent.
 
-CHAT ARCHITECTURE
+---
 
-Expected final flow:
+# 12. CURRENT AGENT ARCHITECTURE
 
-User
- ↓
-API
- ↓
-Authentication
- ↓
-Conversation
- ↓
-Message
- ↓
-Memory retrieval
- ↓
-Tool selection
- ↓
+Current agent structure:
+
+User message
+↓
+Memory Engine
+↓
+Memory Context
+↓
+Tool Registry
+↓
+Tool Selection
+↓
+Generic Tool Execution
+↓
 LLM
- ↓
+↓
 Response
- ↓
-Save message
- ↓
-Memory extraction
- ↓
-Memory update
 
-CONVERSATION ARCHITECTURE
+The agent is not responsible for knowing the implementation details of individual tools.
 
-Target:
+This separation must be preserved.
+
+---
+
+# 13. CURRENT MEMORY ARCHITECTURE
+
+Current target flow:
+
+Message
+↓
+Memory Engine
+↓
+Memory Parser
+↓
+Conflict Resolver
+↓
+Embedding
+↓
+Memory Service
+↓
+Memory Retriever
+↓
+Context Service
+↓
+Agent
+
+Memory retrieval is semantic rather than based on manually enumerated user facts.
+
+Memory lifecycle includes:
+
+- importance;
+- confidence;
+- access count;
+- last accessed time;
+- active/inactive state;
+- supersession.
+
+---
+
+# 14. CURRENT TOOL ARCHITECTURE
+
+Current target flow:
+
+Tool module
+↓
+Tool registration
+↓
+Tool Registry
+↓
+Dynamic discovery
+↓
+Tool metadata
+↓
+Parameter schema
+↓
+Agent tool selection
+↓
+Generic execution
+
+The agent must remain tool-agnostic.
+
+Future tools may include categories such as:
+
+- news/search;
+- finance tracking;
+- email;
+- productivity;
+- calendar;
+- documents;
+- notifications;
+- social media integrations;
+- other useful daily-work automation.
+
+Future integrations must follow the registry architecture.
+
+---
+
+# 15. CURRENT ARCHITECTURAL GAPS
+
+## 15.1 Chat/API ownership boundary
+
+Internal services are increasingly user-aware, but the API boundary must consistently establish:
+
+authenticated user
+↓
+conversation ownership
+↓
+message ownership
+↓
+agent user_id
+↓
+memory user_id
+
+This is the next major backend task.
+
+---
+
+## 15.2 Authentication
+
+Still required:
+
+- registration;
+- password hashing;
+- login;
+- authentication token/session;
+- authenticated dependencies;
+- authenticated API access.
+
+---
+
+## 15.3 Conversation API
+
+Still required:
+
+- create conversation;
+- list user's conversations;
+- retrieve user's conversation;
+- retrieve messages;
+- ownership validation;
+- conversation metadata.
+
+---
+
+## 15.4 Multi-user isolation
+
+Every user-owned query must be scoped to the authenticated user.
+
+Required security property:
+
+User A
+cannot access
+User B conversations.
+
+User A
+cannot access
+User B messages.
+
+User A
+cannot access
+User B memories.
+
+---
+
+## 15.5 Automated testing
+
+Required test coverage:
+
+### Unit tests
+
+- tool registry;
+- tool discovery;
+- parameter schemas;
+- memory parsing;
+- memory retrieval;
+- conflict resolution;
+- authentication;
+- ownership logic.
+
+### Integration tests
+
+- registration;
+- login;
+- authenticated chat;
+- conversation creation;
+- message creation;
+- conversation retrieval;
+- memory retrieval;
+- tool execution.
+
+### Security tests
+
+- User A cannot access User B conversations.
+- User A cannot access User B messages.
+- User A cannot access User B memories.
+
+---
+
+# 16. NEXT DEVELOPMENT PHASE
+
+The next phase is:
+
+MULTI-USER API INTEGRATION
+
+Target architecture:
 
 User
- └── Conversations
-      └── Messages
+↓
+Authentication
+↓
+API
+↓
+Conversation
+↓
+Message
+↓
+Agent
+├── Memory
+└── Tools
+↓
+Assistant response
+↓
+Persist message
 
-Conversation should eventually contain:
+---
 
-id
-user_id
-title
-created_at
-updated_at
+# 17. NEXT STEP
 
-Potential future fields only if needed:
+## Step 25 — Chat/User/Conversation Boundary
 
-archived
-system_prompt
-metadata
+Status:
 
-API ARCHITECTURE
+PENDING
 
-Expected eventual structure:
+Objective:
 
-app/
-├── api/
-│   ├── auth.py
-│   ├── chat.py
-│   ├── conversations.py
-│   ├── memories.py
-│   └── users.py
-│
-├── core/
-│   ├── config.py
-│   ├── security.py
-│   └── dependencies.py
-│
-├── models/
-│   ├── user.py
-│   ├── conversation.py
-│   ├── message.py
-│   └── memory.py
-│
-├── schemas/
-│   ├── auth.py
-│   ├── chat.py
-│   ├── conversation.py
-│   ├── message.py
-│   └── memory.py
-│
-├── services/
-│   ├── chat_service.py
-│   ├── memory_service.py
-│   ├── tool_service.py
-│   └── ...
-│
-└── main.py
+Connect the existing user-aware internal architecture to the chat API.
 
-Do not blindly create or replace this structure. Follow the existing repository and modify it incrementally.
+The API must establish a valid user and conversation context before invoking the agent.
 
-DATABASE MIGRATION STRATEGY
+Expected responsibility separation:
 
-Current development database:
+API
+↓
+validate user/conversation
+↓
+Agent
+↓
+Memory + Tools
 
-SQLite
+The agent should not become responsible for HTTP authentication or conversation ownership.
 
-Migration:
+Before modifying the API, inspect the actual local database state and migration status.
 
-Alembic
+Do not execute destructive migrations.
 
-Potential production database later:
+---
 
-PostgreSQL
+# 18. FUTURE ROADMAP
+
+Step 25
+Chat/User/Conversation boundary
+↓
+Step 26
+Safe legacy-data strategy
+↓
+Step 27
+Conversation API
+↓
+Step 28
+Authentication foundation
+↓
+Step 29
+Authenticated chat
+↓
+Step 30
+Multi-user isolation
+↓
+Step 31
+Memory ownership verification
+↓
+Step 32
+Automated backend tests
+↓
+Step 33
+Frontend authentication
+↓
+Step 34
+Conversation UI
+↓
+Step 35
+Memory-aware UI
+↓
+Step 36+
+Additional tools and integrations
+
+The exact numbering may be adjusted when implementation reveals dependencies, but completed work must never be restarted unnecessarily.
+
+---
+
+# 19. FRONTEND PHASE
+
+Frontend work should follow backend API stabilization.
+
+Planned capabilities:
+
+- registration;
+- login;
+- authenticated session;
+- conversation sidebar;
+- new conversation;
+- conversation history;
+- chat interface;
+- message history;
+- memory-aware responses;
+- tool activity;
+- settings.
+
+---
+
+# 20. PRODUCTION READINESS
+
+Later production work:
+
+- environment configuration;
+- secrets management;
+- PostgreSQL;
+- database backups;
+- structured logging;
+- error handling;
+- rate limiting;
+- CORS;
+- authentication hardening;
+- migration strategy;
+- Docker;
+- deployment;
+- monitoring.
+
+SQLite remains the development database for now.
 
 Do not migrate to PostgreSQL prematurely.
 
-First stabilize:
+---
 
-models
-relationships
-authentication
-memory
-tools
-API
+# 21. IMPORTANT PROJECT STATE
 
-TESTING PHASE
+Current architecture status:
 
-Unit tests should eventually cover:
+Database models              ✅
+Alembic foundation           ✅
+Migration audit              ✅
+Memory engine                ✅
+Memory retrieval             ✅
+Embedding                    ✅
+Conflict resolution          ✅
+Memory lifecycle foundation  ✅
+Memory consolidation         ✅
+Dynamic tool discovery       ✅
+Tool registry                ✅
+Tool metadata                ✅
+Tool parameter schemas       ✅
+Generic tool execution       ✅
+Environment configuration    ✅
+Search configuration         ✅
 
-- authentication
-- memory extraction
-- memory retrieval
-- tool registry
-- conversation ownership
-- message ownership
+Chat ownership boundary      ⏳
+Authentication               ⏳
+Conversation API              ⏳
+Multi-user isolation          ⏳
+Automated tests               ⏳
+Frontend authentication       ⏳
+Frontend conversation UI      ⏳
+Additional integrations       ⏳
+Production deployment         ⏳
 
-Integration tests:
+---
 
-- register
-- login
-- create conversation
-- send message
-- retrieve conversation
-- retrieve memory
-- use tool
+# 22. CURRENT EXACT POSITION
 
-Security tests:
+Last completed implementation milestone:
 
-- User A cannot access User B data
+24C-8 — completed
 
-FRONTEND PHASE
+Current phase:
 
-After backend API stabilizes:
+Multi-user API integration
 
-- Login
-- Register
-- Conversation sidebar
-- Chat interface
-- Message history
-- Memory-aware responses
-- Tool activity
-- Settings
+Next implementation:
 
-PRODUCTION READINESS
+Step 25 — Chat/User/Conversation Boundary
 
-Eventually:
+Do not restart:
 
-- Environment variables
-- Secrets management
-- Production database
-- Logging
-- Error handling
-- Rate limiting
-- CORS
-- Authentication security
-- Database backups
-- Migration strategy
-- Docker
-- Deployment
+- memory architecture audit;
+- search-router refactor;
+- tool registry refactor;
+- tool parameter schema work;
+- generic tool execution work.
 
-RULES FOR FUTURE CHATGPT SESSIONS
+Those areas have already been completed.
 
-If this project is continued in a new ChatGPT tab, tell ChatGPT:
+---
 
-"This is an ongoing capstone project. Read the project progress document first. Continue from the current step instead of restarting the audit. Modify only one file per step. Always provide the full contents of the file. Do not provide multiple files at once unless explicitly requested. Do not run destructive database operations without reviewing them first. Existing memory and message data must be preserved. Tools and memory must remain dynamic and not hard-coded."
+# 23. CONTINUATION RULE
 
-CURRENT EXACT POSITION
+When continuing this project in a new ChatGPT session:
 
-AUDIT
-Audit 1 — completed
-Audit 2 — completed
-Audit 3 — completed
-Audit 4 — completed
-Audit 5 — completed
-Audit 6 — completed
-Audit 7 — completed
-Audit 8 — completed
+1. Read this file first.
+2. Read docs/PROJECT_CONTEXT.md.
+3. Inspect the current repository before proposing changes.
+4. Continue from CURRENT EXACT POSITION.
+5. Do not restart completed steps.
+6. Do not repeat completed architecture refactors.
+7. Do not introduce hard-coded memory rules.
+8. Do not introduce hard-coded tool routing.
+9. Modify one file per implementation step.
+10. Provide the full contents of the modified file.
+11. Test every meaningful change.
+12. Do not perform destructive database operations without review.
+13. Preserve existing data and functionality.
 
-IMPLEMENTATION
-Step 1 — completed
-Step 2 — completed
-Step 3 — completed
-Step 4 — completed
-Step 5 — completed
-Step 6 — completed
-Step 7 — completed
-Step 8C — completed
-Step 9 — completed
-Step 10 — completed
-Step 11 — completed
-Step 12 — completed
-Step 13 — completed
-Step 14 — completed
-Step 15 — completed
-Step 16 — completed
-Step 17 — in progress
-Step 17A — migration audited
-Step 17B — migration revised
-Step 17C — existing messages inspected
-Step 17D — pending memory inspection
-
-DATABASE
-users = 0
-conversations = 0
-messages = 14
-memories = 3
-alembic_version = ab1a31523017
-
-MIGRATION
-baseline = ab1a31523017
-pending migration = cdad530a1797
-
-IMMEDIATE NEXT ACTION
-
-Do NOT run:
-
-alembic upgrade head
-
-First run:
-
-sqlite3 personal_ai.db
-
-Then:
-
-SELECT * FROM memories;
-
-Then:
-
-.quit
-
-Send the result to ChatGPT.
-
-The next step is Step 17D.
+The project should progress forward, not restart from earlier steps.
