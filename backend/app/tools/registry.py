@@ -1,7 +1,17 @@
+import inspect
+
 from dataclasses import dataclass
 from importlib import import_module
 from pkgutil import iter_modules
-from typing import Callable
+from typing import Any, Callable, get_args, get_origin
+
+
+@dataclass(frozen=True)
+class ToolParameter:
+    name: str
+    type: str
+    required: bool
+    default: Any = None
 
 
 @dataclass(frozen=True)
@@ -9,6 +19,7 @@ class ToolDefinition:
     name: str
     description: str
     function: Callable
+    parameters: tuple[ToolParameter, ...]
 
 
 class ToolRegistry:
@@ -32,10 +43,13 @@ class ToolRegistry:
                 f"Tool '{normalized_name}' is already registered."
             )
 
+        parameters = self._build_parameters(function)
+
         self._tools[normalized_name] = ToolDefinition(
             name=normalized_name,
             description=normalized_description,
             function=function,
+            parameters=parameters,
         )
 
     def get(self, name: str):
@@ -64,6 +78,12 @@ class ToolRegistry:
             for name, definition in self._tools.items()
         }
 
+    def get_schemas(self) -> dict[str, dict]:
+        return {
+            name: self._definition_to_schema(definition)
+            for name, definition in self._tools.items()
+        }
+
     def clear(self) -> None:
         self._tools.clear()
 
@@ -80,6 +100,90 @@ class ToolRegistry:
             raise ValueError("Tool description is required.")
 
         return description.strip()
+
+    @classmethod
+    def _build_parameters(
+        cls,
+        function: Callable,
+    ) -> tuple[ToolParameter, ...]:
+        signature = inspect.signature(function)
+        parameters = []
+
+        for parameter in signature.parameters.values():
+            if parameter.kind in (
+                inspect.Parameter.VAR_POSITIONAL,
+                inspect.Parameter.VAR_KEYWORD,
+            ):
+                continue
+
+            annotation = parameter.annotation
+
+            parameter_type = cls._annotation_to_string(annotation)
+
+            required = (
+                parameter.default is inspect.Parameter.empty
+            )
+
+            default = (
+                None
+                if required
+                else parameter.default
+            )
+
+            parameters.append(
+                ToolParameter(
+                    name=parameter.name,
+                    type=parameter_type,
+                    required=required,
+                    default=default,
+                )
+            )
+
+        return tuple(parameters)
+
+    @staticmethod
+    def _annotation_to_string(annotation) -> str:
+        if annotation is inspect.Parameter.empty:
+            return "string"
+
+        origin = get_origin(annotation)
+
+        if origin is not None:
+            args = get_args(annotation)
+
+            if args:
+                return " | ".join(
+                    ToolRegistry._annotation_to_string(arg)
+                    for arg in args
+                )
+
+            return str(origin)
+
+        if annotation is Any:
+            return "any"
+
+        if isinstance(annotation, type):
+            return annotation.__name__
+
+        return str(annotation)
+
+    @staticmethod
+    def _definition_to_schema(
+        definition: ToolDefinition,
+    ) -> dict:
+        return {
+            "name": definition.name,
+            "description": definition.description,
+            "parameters": [
+                {
+                    "name": parameter.name,
+                    "type": parameter.type,
+                    "required": parameter.required,
+                    "default": parameter.default,
+                }
+                for parameter in definition.parameters
+            ],
+        }
 
 
 tool_registry = ToolRegistry()
