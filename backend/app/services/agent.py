@@ -4,18 +4,18 @@ from app.services.context import context_service
 from app.services.memory_engine import memory_engine
 from app.services.memory_parser import memory_parser
 from app.services.ollama import ollama_service
-from app.tools import TOOLS
+from app.tools.registry import discover_tools
 
 
 class AgentService:
     def __init__(self):
-        self.tools = TOOLS
+        self.tools = discover_tools()
 
     def _select_tool(self, message):
-        if not self.tools:
-            return None
+        tool_names = self.tools.get_names()
 
-        tool_names = list(self.tools.keys())
+        if not tool_names:
+            return None, message
 
         prompt = f"""
 Determine whether the user message requires one of the available tools.
@@ -45,7 +45,7 @@ User message:
             tool_name = data.get("tool")
             tool_input = data.get("input") or message
 
-            if tool_name not in self.tools:
+            if tool_name not in tool_names:
                 return None, message
 
             return tool_name, tool_input
@@ -53,6 +53,31 @@ User message:
         except Exception as e:
             print("Tool selection error:", e)
             return None, message
+
+    def _execute_tool(self, tool_name, tool_input):
+        if not tool_name:
+            return None, []
+
+        tool = self.tools.get(tool_name)
+
+        if not tool:
+            return None, []
+
+        try:
+            result = tool(tool_input)
+
+            citations = []
+
+            if isinstance(result, dict):
+                citations = format_citations(
+                    result.get("results", [])
+                )
+
+            return result, citations
+
+        except Exception as e:
+            print("Tool execution error:", e)
+            return None, []
 
     def run(self, user_id, message):
         if not message or not message.strip():
@@ -65,6 +90,7 @@ User message:
             )
         except Exception as e:
             print("Memory engine error:", e)
+
             memory_decision = {
                 "need_memory": False,
                 "search_query": "",
@@ -83,22 +109,10 @@ User message:
 
         tool_name, tool_input = self._select_tool(message)
 
-        result = None
-        citations = []
-
-        if tool_name:
-            tool = self.tools.get(tool_name)
-
-            if tool:
-                try:
-                    result = tool(tool_input)
-
-                    if isinstance(result, dict):
-                        citations = format_citations(
-                            result.get("results", [])
-                        )
-                except Exception as e:
-                    print("Tool execution error:", e)
+        result, citations = self._execute_tool(
+            tool_name,
+            tool_input,
+        )
 
         prompt = f"""
 You are a personal AI assistant.
