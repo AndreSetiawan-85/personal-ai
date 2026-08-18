@@ -1,146 +1,60 @@
+from app.services.embedding import embedding_service
 from app.services.memory import memory_service
-from datetime import datetime
 
 
 class MemoryRetriever:
 
-    def retrieve(self, query, limit=5):
+    def retrieve(self, user_id, query, limit=5):
+        if not query or not query.strip():
+            return []
 
-        memories = memory_service.get_memories(limit=100)
+        query_embedding = embedding_service.embed(query)
+
+        if not query_embedding:
+            return []
+
+        memories = memory_service.get_all_active_with_embeddings(
+            user_id=user_id,
+        )
 
         if not memories:
             return []
 
-        query_lower = query.lower()
+        scored_memories = []
 
-        aliases = {
-            "proyek": [
-                "project",
-                "software",
-                "ai",
-                "aplikasi",
-                "membuat",
-                "membangun"
-            ],
-            "kerja": [
-                "pekerjaan",
-                "project",
-                "software",
-                "ai"
-            ],
-            "kebiasaan": [
-                "habit",
-                "productivity",
-                "work",
-                "fokus"
-            ],
-            "saya": [],
-            "aku": []
-        }
+        for memory in memories:
+            embedding = memory.get("embedding")
 
-        query_words = set(
-            query_lower
-            .replace("?", "")
-            .replace(",", "")
-            .split()
-        )
-
-        expanded_words = set(query_words)
-
-        for word in query_words:
-            if word in aliases:
-                expanded_words.update(
-                    aliases[word]
-                )
-
-        scored = []
-
-        now = datetime.now()
-
-        for item in memories:
-
-            content = item.get(
-                "content",
-                ""
-            ).lower()
-
-            tags = [
-                x.lower()
-                for x in item.get("tags", [])
-            ]
-
-            relevance = 0
-
-            for word in expanded_words:
-
-                if len(word) <= 2:
-                    continue
-
-                if word in content:
-                    relevance += 5
-
-                if word in tags:
-                    relevance += 3
-
-            if relevance == 0:
+            if not embedding:
                 continue
 
-            score = relevance
-
-            score += item.get(
-                "importance",
-                5
-            ) * 0.3
-
-            score += item.get(
-                "confidence",
-                0.5
-            ) * 2
-
-            score += min(
-                item.get("access_count", 0),
-                10
-            ) * 0.5
-
-            try:
-                last_access = datetime.fromisoformat(
-                    item["last_accessed_at"]
-                )
-
-                days = (
-                    now - last_access
-                ).days
-
-                if days == 0:
-                    score += 2
-
-                elif days <= 7:
-                    score += 1
-
-            except Exception:
-                pass
-
-            scored.append(
-                (
-                    score,
-                    item
-                )
+            score = embedding_service.cosine_similarity(
+                query_embedding,
+                embedding,
             )
 
-        scored.sort(
-            key=lambda x: x[0],
-            reverse=True
+            scored_memories.append(
+                (score, memory)
+            )
+
+        scored_memories.sort(
+            key=lambda item: item[0],
+            reverse=True,
         )
 
-        results = [
-            item
-            for score, item in scored[:limit]
-        ]
+        results = []
 
-        for item in results:
-            memory_service.touch_memory(
-                item["id"]
-            )
+        for score, memory in scored_memories[:limit]:
+            memory["similarity"] = score
+            results.append(memory)
+
+            try:
+                memory_service.touch_memory(
+                    memory_id=memory["id"],
+                    user_id=user_id,
+                )
+            except Exception as e:
+                print("Memory access update error:", e)
 
         return results
 

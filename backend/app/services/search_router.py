@@ -1,87 +1,44 @@
-SEARCH_DOMAINS = {
-    "news": [
-        "berita",
-        "terbaru",
-        "hari ini",
-        "update",
-        "breaking",
-        "news",
-    ],
-    "food": [
-        "resep",
-        "masak",
-        "bahan",
-        "menu",
-        "makanan",
-        "minuman",
-    ],
-    "travel": [
-        "hotel",
-        "pesawat",
-        "wisata",
-        "liburan",
-        "travel",
-        "tiket",
-        "destinasi",
-        "jalan-jalan",
-    ],
-    "shopping": [
-        "harga",
-        "beli",
-        "produk",
-        "rekomendasi",
-        "murah",
-        "terbaik",
-        "review",
-    ],
-    "coding": [
-        "python",
-        "javascript",
-        "error",
-        "bug",
-        "framework",
-        "api",
-        "program",
-    ],
-    "finance": [
-        "saham",
-        "crypto",
-        "investasi",
-        "harga dolar",
-        "kurs",
-    ],
-    "health": [
-        "obat",
-        "gejala",
-        "kesehatan",
-        "dokter",
-    ],
-    "entertainment": [
-        "film",
-        "series",
-        "anime",
-        "game",
-        "musik",
-    ],
-}
+from app.services.ollama import ollama_service
+from app.core.config import settings
 
 
 def detect_search_type(message: str):
-    text = message.lower()
-    scores = {}
+    if not message or not message.strip():
+        return None
 
-    for domain, keywords in SEARCH_DOMAINS.items():
-        score = 0
+    prompt = f"""
+Determine whether the user's message requires current or externally retrieved information.
 
-        for keyword in keywords:
-            if keyword in text:
-                score += 1
+Return exactly one JSON object:
 
-        scores[domain] = score
+{{"needs_search": true}}
 
-    best_domain = max(scores, key=scores.get)
+or
 
-    if scores[best_domain] > 0:
-        return best_domain
+{{"needs_search": false}}
 
-    return "general"
+Search is appropriate when the user asks for information that may be current,
+changing, externally verifiable, or requires information not contained in the
+conversation.
+
+Do not search merely because the message is a question.
+
+USER MESSAGE:
+{message.strip()}
+"""
+
+    try:
+        response = ollama_service.generate_response(prompt)
+
+        normalized = response.strip().lower()
+
+        if '"needs_search": true' in normalized:
+            return "general"
+
+        if '"needs_search": false' in normalized:
+            return None
+
+    except Exception as e:
+        print("Search router error:", e)
+
+    return None

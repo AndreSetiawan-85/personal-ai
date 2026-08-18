@@ -1,6 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
-from sqlalchemy import Column, DateTime, Integer, String, Text
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import relationship
 
 from app.database import Base
 
@@ -10,8 +11,37 @@ class Message(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    role = Column(String, nullable=False)
+    user_id = Column(
+        Integer,
+        nullable=True,
+        index=True,
+    )
 
-    content = Column(Text, nullable=False)
+    conversation_id = Column(
+        Integer,
+        ForeignKey("conversations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    role = Column(
+        String(50),
+        nullable=False,
+    )
+
+    content = Column(
+        Text,
+        nullable=False,
+    )
+
+    created_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+        index=True,
+    )
+
+    conversation = relationship(
+        "Conversation",
+        back_populates="messages",
+    )

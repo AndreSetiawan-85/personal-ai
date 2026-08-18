@@ -6,3 +6,21 @@ venv/
 # Next
 node_modules/
 .next/
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# macOS
+.DS_Store
+
+# Python virtual environments
+.venv/
+
+# Python cache
+*.pyo

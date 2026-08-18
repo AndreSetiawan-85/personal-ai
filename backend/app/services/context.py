@@ -3,11 +3,11 @@ from app.services.memory_retriever import memory_retriever
 
 class ContextService:
 
-    def build_context(self, query):
-
+    def build_context(self, user_id, query):
         memories = memory_retriever.retrieve(
-            query,
-            limit=5
+            user_id=user_id,
+            query=query,
+            limit=5,
         )
 
         if not memories:

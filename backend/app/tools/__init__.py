@@ -1,7 +1,5 @@
-from app.tools.calculator import calculate
-from app.tools.web_search import web_search
+from app.tools.registry import discover_tools
 
-TOOLS = {
-    "calculator": calculate,
-    "web_search": web_search,
-}
+tool_registry = discover_tools()
+
+TOOLS = tool_registry
