@@ -19,7 +19,7 @@ SessionLocal = sessionmaker(
 Base = declarative_base()
 
 def init_db():
-    from app.models import Conversation, Message, User
+    from app.models import Conversation, Message, Task, User
     Base.metadata.create_all(bind=engine)
 
 def get_db():

@@ -73,6 +73,41 @@ class Task(Base):
         index=True,
     )
 
+    last_error: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    run_count: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+    )
+
+    error_count: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+    )
+
+    max_retries: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+    )
+
+    retry_count: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+    )
+
+    retry_delay: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=60,
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,
